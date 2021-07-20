@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Teaching the tidyverse in 2021</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Mine Çetinkaya-Rundel" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/panelset/panelset.css" rel="stylesheet" />
+    <script src="libs/panelset/panelset.js"></script>
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+    <link rel="stylesheet" href="slides.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Teaching the tidyverse in 2021
+## RStudio Certified Instructors Webinar <br> 20 July 2021
+### Mine Çetinkaya-Rundel
+
+---
+
+
+
+
+class: middle
+
+.huge[you...]
+
+- use and teach tidyverse
+- want to update your usage and teaching of tidyverse
+
+
+```r
+library(tidyverse)
+```
+
+---
+
+class: middle
+
+# lifecycle
+
+---
+
+## Lifecycle stages
+
+&lt;img src="images/lifecycle.png" width="80%" style="display: block; margin: auto;" /&gt;
+
+.tip[
+Be aware of the stages (and their associated badges) as you review/revise your teaching materials or as you consider incorporating new tooling into your teaching.
+]
+
+---
+
+background-image: url("images/lifecycle-stable.svg")
+background-position: 90% 5%
+background-size: 20% 8%
+
+## Stable
+
+- Breaking changes avoided where possible, only made if long term benefit &gt; short term pain of changing existing code
+
+- If breaking change needed, it will occur gradually
+
+- Badge generally not shown as it applies to huge majority of functions
+
+.tip[
+Teach away!
+]
+
+---
+
+background-image: url("images/lifecycle-deprecated.svg")
+background-position: 90% 5%
+background-size: 20% 8%
+
+## Deprecated
+
+- Has a better alternative available and is scheduled for removal
+
+- Process: Soft deprecated `\(\rightarrow\)` deprecated `\(\rightarrow\)` defunct
+
+- Can apply to functions and arguments
+
+--
+
+- Examples:
+  - `tibble()` not `data_frame()`
+  - in `nest()`: `new_col` not `.key`
+
+--
+
+.tip[
+Don't teach and correct usage suggesting the alternative.
+]
+
+---
+
+background-image: url("images/lifecycle-superseded.svg")
+background-position: 90% 5%
+background-size: 20% 8%
+
+## Superseded
+
+- Has a known better alternative, but the function not going away
+
+--
+
+- Examples:
+  - `tidyr::spread()` / `tidyr::gather()` vs. `tidyr::pivot_longer()` / `tidyr::pivot_wider()`
+  - Scoped verbs (e.g., `dplyr::mutate_if()`, `dplyr::select_at()`, `dplyr::rename_all()`, etc.) vs. `dplyr::across()`
+  - `dplyr::sample_n()` / `dplyr::sample_frac()` vs. `dplyr::slice_sample()` with `n` and `prop` arguments
+
+--
+
+.tip[
+Don't teach and discourage use, suggesting the alternative.
+]
+
+---
+
+background-image: url("images/lifecycle-experimental.svg")
+background-position: 90% 5%
+background-size: 20% 8%
+
+## Experimental
+
+- Made available so people can try them out and provide feedback, but come with no promises for long term stability
+
+--
+
+- Examples:
+  - `dplyr::group_trim()` to unused levels of all factors that are used as grouping variables
+  - in `dplyr::summarize()`: `.groups` argument to define the grouping structure of the result
+  - in `dplyr::mutate()`: `.before` and `.after` arguments to control where new columns should appear
+
+--
+
+.tip[
+Teach with caution, but don't discourage use.
+]
+
+---
+
+## Learn more
+
+- Talk: Maintaining the house the tidyverse built
+
+.center[
+&lt;a href="https://www.rstudio.com/resources/rstudioglobal-2021/maintaining-the-house-the-tidyverse-built/?wvideo=f7ph68edqb"&gt;&lt;img src="https://embedwistia-a.akamaihd.net/deliveries/afe1b9d32cd4d814afe3f6d638fdba8f.jpg?image_play_button_size=2x&amp;amp;image_crop_resized=960x540&amp;amp;image_play_button=1&amp;amp;image_play_button_color=4287c7e0" width="600" height="338" style="width: 600px; height: 338px;"&gt;&lt;/a&gt;&lt;/p&gt;&lt;p&gt;&lt;a href="https://www.rstudio.com/resources/rstudioglobal-2021/maintaining-the-house-the-tidyverse-built/?wvideo=f7ph68edqb"&gt;&lt;/a&gt;
+]
+
+- Blog post: https://www.tidyverse.org/blog/2021/02/lifecycle-1-0-0/
+
+---
+
+class: middle
+
+# rvest
+
+
+```r
+library(rvest)
+```
+
+---
+
+class: middle
+
+.tip[
+If you've been teaching web scraping with **rvest**, update your code before you teach next time!
+]
+
+---
+
+## New function: `html_text2()`
+
+Better handling of line breaks
+
+
+```r
+html &lt;- minimal_html(
+  "&lt;p&gt;  
+    This is a paragraph.
+    This another sentence.&lt;br&gt;This should start on a new line
+  &lt;/p&gt;"
+)
+```
+
+
+```r
+html %&gt;% html_text() %&gt;% writeLines()  # old
+```
+
+```
+##   
+##     This is a paragraph.
+##     This another sentence.This should start on a new line
+## 
+```
+
+```r
+html %&gt;% html_text2() %&gt;% writeLines() # new
+```
+
+```
+## This is a paragraph. This another sentence.
+## This should start on a new line
+```
+
+---
+
+## Updated behaviour: `html_table()`
+
+Better handling of column spans and returns a tibble
+
+
+```r
+html &lt;- minimal_html("&lt;table&gt;
+  &lt;tr&gt;&lt;th&gt;A&lt;/th&gt;&lt;th&gt;B&lt;/th&gt;&lt;th&gt;C&lt;/th&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td colspan='2' rowspan='2'&gt;1&lt;/td&gt;&lt;td&gt;2&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td rowspan='2'&gt;3&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;4&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;")
+
+html %&gt;%
+  html_element("table") %&gt;%
+  html_table()
+```
+
+```
+## # A tibble: 3 x 3
+##       A     B     C
+##   &lt;int&gt; &lt;int&gt; &lt;int&gt;
+## 1     1     1     2
+## 2     1     1     3
+## 3     4    NA     3
+```
+
+---
+
+## Superseded functions: `html_node()` and `html_nodes()`
+
+- Recommended alternatives: `html_element()` and `html_elements()`
+
+- Motivation: Vobulary alignment between HTML (the language) and what rvest calls "things"
+
+---
+
+
+## Learn more
+
+- Blog post: https://www.tidyverse.org/blog/2021/03/rvest-1-0-0/
+
+- Updated rvest vignette: https://rvest.tidyverse.org/articles/rvest.html
+
+---
+
+class: middle
+
+# reprex
+
+
+```r
+library(reprex)
+```
+
+---
+
+class: middle
+
+.tip[
+Use on RStudio Server and RStudio Cloud!
+]
+
+---
+
+## reprex in the browser
+
+Improved experience when using RStudio in the browser (e.g. RStudio Server or RStudio Cloud)
+
+&lt;img src="images/reprex-in-browser.png" title="Default input/output is the current selection in RStudio Server and Cloud. Reproducible example is pasted into a new document with a randomly generated name: mad-duck." alt="Default input/output is the current selection in RStudio Server and Cloud. Reproducible example is pasted into a new document with a randomly generated name: mad-duck." width="60%" style="display: block; margin: auto;" /&gt;
+
+---
+
+## Local files in reprex
+
+Use new argument `wd` to set working directory of the reprex (instead of the less intuitive `reprex(outfile = NA)` to use current working directory)
+
+
+```r
+reprex(wd = ".")
+```
+
+--
+
+.tip[
+Helpful for student questions using local data!
+]
+
+---
+
+## Use project-level `.Rprofile`
+
+Reprexing in the current working directory also means using the project-level `.Rprofile`, especially helpful with project uses [renv](https://rstudio.github.io/renv/articles/renv.html)
+
+
+```r
+reprex(wd = ".")
+```
+
+--
+
+.tip[
+May be less relevant for new learners, but a useful tool if the suite you teach with is different than what you have locally installed (e.g. CRAN versions to teach, dev vesions to play!)
+]
+
+---
+
+
+## Learn more
+
+- Blog post: https://www.tidyverse.org/blog/2021/04/reprex-2-0-0/
+
+---
+
+class: middle
+
+# dbplyr / dtplyr
+
+
+```r
+library(dtplyr)
+library(dbplyr)
+```
+
+---
+
+class: middle
+
+.tip[
+Maybe you use it to teach (or maybe not), but you can definitely use them to learn data.table and SQL!
+]
+
+---
+
+## dtplyr
+
+**dtplyr** translates dplyr pipelines into equivalent **data.table** code
+
+
+```r
+mtcars_dt &lt;- lazy_dt(mtcars)
+
+cyl_summary &lt;- mtcars_dt %&gt;% 
+  group_by(cyl) %&gt;% 
+  summarise(across(disp:wt, mean))
+
+# result
+cyl_summary %&gt;% as_tibble()
+```
+
+```
+## # A tibble: 3 x 5
+##     cyl  disp    hp  drat    wt
+##   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1     4  105.  82.6  4.07  2.29
+## 2     6  183. 122.   3.59  3.12
+## 3     8  353. 209.   3.23  4.00
+```
+
+---
+
+## Translation
+
+
+```r
+# query
+cyl_summary %&gt;% show_query()
+```
+
+```
+## `_DT1`[, .(disp = mean(disp), hp = mean(hp), drat = mean(drat), 
+##     wt = mean(wt)), keyby = .(cyl)]
+```
+
+---
+
+## dtplyr for some tidyr functions!
+
+
+```r
+fish_encounters_dt &lt;- lazy_dt(fish_encounters)
+
+fish_encounters_wider &lt;- fish_encounters_dt %&gt;%
+  pivot_wider(names_from = station, values_from = seen, values_fill = 0)
+
+# result
+fish_encounters_wider %&gt;% as_tibble()
+```
+
+```
+## # A tibble: 19 x 12
+##   fish  Release I80_1 Lisbon  Rstr Base_TD   BCE   BCW  BCE2
+##   &lt;fct&gt;   &lt;int&gt; &lt;int&gt;  &lt;int&gt; &lt;int&gt;   &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;
+## 1 4842        1     1      1     1       1     1     1     1
+## 2 4843        1     1      1     1       1     1     1     1
+## 3 4844        1     1      1     1       1     1     1     1
+## 4 4845        1     1      1     1       1     0     0     0
+## 5 4847        1     1      1     0       0     0     0     0
+## 6 4848        1     1      1     1       0     0     0     0
+## # … with 13 more rows, and 3 more variables: BCW2 &lt;int&gt;,
+## #   MAE &lt;int&gt;, MAW &lt;int&gt;
+```
+
+---
+
+## Translation
+
+
+```r
+# query
+fish_encounters_wider %&gt;% show_query()
+```
+
+```
+## dcast(`_DT2`, formula = fish ~ station, value.var = "seen", fill = 0)
+```
+
+---
+
+## dbplyr
+
+**dbplyr** translates dplyr pipelines into equivalent **SQL** code
+
+
+```r
+fish_encounters_db &lt;- memdb_frame(fish_encounters)
+
+fish_encounters_wider &lt;- fish_encounters_db %&gt;%
+  pivot_wider(names_from = station, values_from = seen, values_fill = 0)
+
+# result
+fish_encounters_wider %&gt;% as_tibble()
+```
+
+```
+## # A tibble: 19 x 12
+##   fish  Release I80_1 Lisbon  Rstr Base_TD   BCE   BCW  BCE2
+##   &lt;chr&gt;   &lt;int&gt; &lt;int&gt;  &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 4842        1     1      1     1       1     1     1     1
+## 2 4843        1     1      1     1       1     1     1     1
+## 3 4844        1     1      1     1       1     1     1     1
+## 4 4845        1     1      1     1       1     0     0     0
+## 5 4847        1     1      1     0       0     0     0     0
+## 6 4848        1     1      1     1       0     0     0     0
+## # … with 13 more rows, and 3 more variables: BCW2 &lt;dbl&gt;,
+## #   MAE &lt;dbl&gt;, MAW &lt;dbl&gt;
+```
+
+---
+
+## Translation
+
+
+```r
+# query
+fish_encounters_wider %&gt;% show_query()
+```
+
+```
+## &lt;SQL&gt;
+## SELECT `fish`, MAX(CASE WHEN (`station` = 'Release') THEN (`seen`) WHEN NOT(`station` = 'Release') THEN (0.0) END) AS `Release`, MAX(CASE WHEN (`station` = 'I80_1') THEN (`seen`) WHEN NOT(`station` = 'I80_1') THEN (0.0) END) AS `I80_1`, MAX(CASE WHEN (`station` = 'Lisbon') THEN (`seen`) WHEN NOT(`station` = 'Lisbon') THEN (0.0) END) AS `Lisbon`, MAX(CASE WHEN (`station` = 'Rstr') THEN (`seen`) WHEN NOT(`station` = 'Rstr') THEN (0.0) END) AS `Rstr`, MAX(CASE WHEN (`station` = 'Base_TD') THEN (`seen`) WHEN NOT(`station` = 'Base_TD') THEN (0.0) END) AS `Base_TD`, MAX(CASE WHEN (`station` = 'BCE') THEN (`seen`) WHEN NOT(`station` = 'BCE') THEN (0.0) END) AS `BCE`, MAX(CASE WHEN (`station` = 'BCW') THEN (`seen`) WHEN NOT(`station` = 'BCW') THEN (0.0) END) AS `BCW`, MAX(CASE WHEN (`station` = 'BCE2') THEN (`seen`) WHEN NOT(`station` = 'BCE2') THEN (0.0) END) AS `BCE2`, MAX(CASE WHEN (`station` = 'BCW2') THEN (`seen`) WHEN NOT(`station` = 'BCW2') THEN (0.0) END) AS `BCW2`, MAX(CASE WHEN (`station` = 'MAE') THEN (`seen`) WHEN NOT(`station` = 'MAE') THEN (0.0) END) AS `MAE`, MAX(CASE WHEN (`station` = 'MAW') THEN (`seen`) WHEN NOT(`station` = 'MAW') THEN (0.0) END) AS `MAW`
+## FROM `dbplyr_001`
+## GROUP BY `fish`
+```
+
+---
+
+## Learn more
+
+- Blog post: https://www.tidyverse.org/blog/2021/02/dplyr-backends/
+- dtplyr: https://dtplyr.tidyverse.org/articles/translation.html
+- dbplyr: https://dbplyr.tidyverse.org/articles/dbplyr.html
+
+---
+
+class: middle
+
+# tidymodels
+
+---
+
+## What is tidymodels?
+
+The **tidymodels** framework is a collection of packages for modeling and machine learning using tidyverse principles.
+
+
+```r
+library(tidymodels)
+```
+
+---
+
+&lt;img src="images/tidymodels.png" width="95%" style="display: block; margin: auto;" /&gt;
+
+---
+
+## Motivation for tidymodels
+
+- Provide similar interfaces to models
+- Help users avoid pitfalls
+- Pedagogical advantages
+
+---
+
+## Provide similar interfaces to models
+
+- Q: How do you define the the number of trees when fitting a random forest model?
+
+--
+- A: Depends on the package: `randomForest::randomForest()` uses `ntree`, `ranger::ranger()` uses `num.trees`, Spark's `sparklyr::ml_random_forest()` uses `num_trees`.
+
+--
+- A, with tidymodels: 
+
+
+```r
+rf_mod &lt;- rand_forest(trees = 2000)
+```
+
+---
+
+## Help users avoid pitfalls
+
+&lt;br&gt;
+
+&gt; *"Many models, especially complex predictive or machine learning models, can work very well on the data at hand but may fail when exposed to new data. Often, this issue is due to poor choices made during the development and/or selection of the models. Whenever possible, [tidymodels] software, documentation, and other materials attempt to prevent these and other pitfalls."* [[Source](https://www.tmwr.org/index.html)]
+
+&lt;br&gt;
+
+--
+- Tidymodels pipelines start with splitting data into training and testing sets, and facilitate keeping them separate
+- Tidymodels is opioniated about which functions can be applied to testing data
+
+---
+
+## Pedagogical advantages
+
+For simple `lm()`, might hard to see the advantage:
+
+.small[
+.pull-left[
+
+```r
+# base R
+lm(hwy ~ cty, data = mpg) %&gt;%
+  summary()
+```
+
+```
+## 
+## Call:
+## lm(formula = hwy ~ cty, data = mpg)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -5.3408 -1.2790  0.0214  1.0338  4.0461 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)  0.89204    0.46895   1.902   0.0584 .  
+## cty          1.33746    0.02697  49.585   &lt;2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.752 on 232 degrees of freedom
+## Multiple R-squared:  0.9138,	Adjusted R-squared:  0.9134 
+## F-statistic:  2459 on 1 and 232 DF,  p-value: &lt; 2.2e-16
+```
+]
+.pull-right[
+
+```r
+# tidymodels
+linear_reg() %&gt;%
+  set_engine("lm") %&gt;%
+  fit(hwy ~ cty, data = mpg) %&gt;%
+  tidy()
+```
+
+```
+## # A tibble: 2 x 5
+##   term        estimate std.error statistic   p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)    0.892    0.469       1.90 5.84e-  2
+## 2 cty            1.34     0.0270     49.6  1.87e-125
+```
+]
+]
+
+---
+
+## Pedagogical advantages
+
+Though easier to see the advantage in the summary step.
+
+.small[
+.pull-left[
+
+```r
+# base R
+lm(hwy ~ cty, data = mpg) %&gt;%
+  tidy()
+```
+
+```
+## # A tibble: 2 x 5
+##   term        estimate std.error statistic   p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)    0.892    0.469       1.90 5.84e-  2
+## 2 cty            1.34     0.0270     49.6  1.87e-125
+```
+]
+.pull-right[
+
+```r
+# tidymodels
+linear_reg() %&gt;%
+  set_engine("lm") %&gt;%
+  fit(hwy ~ cty, data = mpg) %&gt;%
+  tidy()
+```
+
+```
+## # A tibble: 2 x 5
+##   term        estimate std.error statistic   p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;
+## 1 (Intercept)    0.892    0.469       1.90 5.84e-  2
+## 2 cty            1.34     0.0270     49.6  1.87e-125
+```
+]
+]
+
+---
+
+## Pedagogical advantages
+
+More clear as you move on to different models
+
+.pull-left[
+
+```r
+# different engines
+linear_reg() %&gt;%
+  set_engine("lm") %&gt;%
+  set_mode("regression")
+
+logistic_reg() %&gt;% 
+  set_engine("glm") %&gt;%
+  set_mode("classification")
+
+rand_forest() %&gt;% 
+  set_engine("ranger") %&gt;% 
+  set_mode("regression")
+
+decision_tree() %&gt;% 
+  set_engine("rpart") %&gt;% 
+  set_mode("regression")
+```
+]
+.pull-right[
+
+```r
+# same engine, different modes
+svm_linear() %&gt;% 
+  set_engine("LiblineaR") %&gt;% 
+  set_mode("regression")
+```
+
+```
+## Linear Support Vector Machine Specification (regression)
+## 
+## Computational engine: LiblineaR
+```
+
+```r
+svm_linear() %&gt;% 
+  set_engine("LiblineaR") %&gt;% 
+  set_mode("classification")
+```
+
+```
+## Linear Support Vector Machine Specification (classification)
+## 
+## Computational engine: LiblineaR
+```
+]
+
+---
+
+## Pedagogical advantages
+
+Build on dplyr pipelines to build recipes
+
+
+
+.small[
+.pull-left[
+
+```r
+# dplyr for data wrangling
+
+
+openintro::email %&gt;%
+  select(-from, -sent_email) %&gt;%
+  mutate(
+    day_of_week = lubridate::wday(time),
+    month = lubridate::month(time)
+  ) %&gt;%
+  select(-time) %&gt;%
+  mutate(
+    cc = cut(cc, breaks = c(0, 1)),
+    attach = cut(attach, breaks = c(0, 1)),
+    dollar = cut(dollar, breaks = c(0, 1))
+  ) %&gt;%
+  mutate(
+    inherit = cut(inherit, breaks = c(0, 1, 5, 10, 20)),
+    password = cut(password, breaks = c(0, 1, 5, 10, 20))
+  )
+```
+]
+.pull-right[
+
+```r
+# recipes for data preprocessing and feature engineering
+# same steps, similar syntax, 
+# less bookkeeping for the analyst in modeling setting
+recipe(spam ~ ., data = openintro::email) %&gt;%
+  step_rm(from, sent_email) %&gt;%
+  step_date(
+    time, 
+    features = c("dow", "month")
+    ) %&gt;%
+  step_rm(time) %&gt;%
+  step_cut(
+    cc, 
+    attach, 
+    dollar, breaks = c(0, 1)
+    ) %&gt;%
+  step_cut(
+    inherit, 
+    password, breaks = c(0, 1, 5, 10, 20)
+    )
+```
+]
+]
+
+---
+
+## Learning resources
+
+.large[
+🏁 **Get started** with tidymodels: [tidymodels.org/start](https://www.tidymodels.org/start/)
+
+📄 **Learn** more and go further: [tidymodels.org/learn](https://www.tidymodels.org/learn/)
+
+📘 **Tidy Modeling with R** by Max Kuhn &amp; Julia Silge: [tmwr.org](https://www.tmwr.org/)
+]
+
+---
+
+## Teaching resources
+
+**Data Science in a Box** ([datasciencebox.org](https://datasciencebox.org/)) contains slides, application exercises, computing labs, and homework assignments on modelling and inference with tidymodels:
+
+.midi[
+- Slides and application exercises:
+  - [Modelling data](https://datasciencebox.org/making-rigorous-conclusions.html#modelling-data)
+  - [Classification and model building](https://datasciencebox.org/making-rigorous-conclusions.html#classification-and-model-building)
+  - [Model validation](https://datasciencebox.org/making-rigorous-conclusions.html#model-validation)
+  - [Uncertainty quantification](https://datasciencebox.org/making-rigorous-conclusions.html#uncertainty-quantification)
+- [Labs](https://datasciencebox.org/making-rigorous-conclusions.html#labs-2)
+  - Grading the professor: Fitting and interpreting simple linear regression models
+  - Smoking while pregnant: Constructing confidence intervals, conducting hypothesis tests, and interpreting results in context of the data
+- [Homework assignments](https://datasciencebox.org/making-rigorous-conclusions.html#homework-assignments-1):
+  - Bike rentals in DC: Exploratory data analysis and fitting and interpreting models
+  - Exploring the GSS: Fitting and interpreting models
+  - Modelling the GSS: Model validation and inference
+]
+
+---
+
+class: middle
+
+# Upcoming
+
+---
+
+## Updates to watch out for
+
+- **infer** for theoretical inference pipelines and bootstrapping for regression with multiple predictors
+- **parsnip** for using the default engine without an additional step in the modeling pipeline
+- **readr** for reading in many csv files at once (like with vroom)
+- updated/new cheatsheets!
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightLines": true,
+"highlightStyle": "solarized-light",
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
